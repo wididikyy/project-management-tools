@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Roles {
+  admin
+  manager
+  member
+}
+
+enum ProjectStatuses {
+  active
+  completed
+  paused
+  canceled
+}
+
+enum TaskStatuses {
+  pending
+  progress
+  completed
+  canceled
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+model Users {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  username        String            @unique
+  password        String
+  email           String            @unique
+  role            Roles
+  timeZone        String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime?         @updatedAt
+  tasks           Tasks[]
+  taskComments    TaskComments[]
+  taskAttachments TaskAttachments[]
+}
+
+model Client {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String     @unique
+  phone     String
+  address   String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime?  @updatedAt
+  projects  Projects[]
+}
+
+model Projects {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  status         ProjectStatuses
+  clientId       String          @db.ObjectId
+  client         Client          @relation(fields: [clientId], references: [id])
+  priority       Priority
+  budget         Float
+  actualCost     Float
+  estimatedHours Float
+  actualHours    Float
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime?       @updatedAt
+  tasks          Tasks[]
+}
+
+model Tasks {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  projectId       String            @db.ObjectId
+  project         Projects          @relation(fields: [projectId], references: [id])
+  name            String
+  description     String?
+  status          TaskStatuses
+  priority        Priority
+  assignedTo      String            @db.ObjectId
+  assigned        Users             @relation(fields: [assignedTo], references: [id])
+  estimatedHours  Float
+  actualHours     Float
+  depedencies     String[]
+  taskComments    TaskComments[]
+  taskAttachments TaskAttachments[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime?         @updatedAt
+}
+
+model TaskComments {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String    @db.ObjectId
+  task      Tasks     @relation(fields: [taskId], references: [id])
+  userId    String    @db.ObjectId
+  user      Users     @relation(fields: [userId], references: [id])
+  comment   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model TaskAttachments {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  taskId     String    @db.ObjectId
+  task       Tasks     @relation(fields: [taskId], references: [id])
+  fileName   String
+  filePath   String
+  uploadedBy String    @db.ObjectId
+  uploaded   Users     @relation(fields: [uploadedBy], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime? @updatedAt
+}
